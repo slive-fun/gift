@@ -1,7 +1,12 @@
 import * as trpc from '@trpc/server'
 import { z } from 'zod'
 import Redis from 'ioredis'
-import { getGiftConfig, getRoomGifts } from '$lib/bili'
+import {
+  getGiftConfig,
+  getRoomCommonGifts,
+  getRoomGifts,
+  getRoomSpecialGifts,
+} from '$lib/bili'
 import type { Gift } from '$lib/bili'
 const redis = new Redis({ keyPrefix: 'slive.gift.' })
 
@@ -29,6 +34,13 @@ export const appRouter = trpc
   .query('room_gifts', {
     input: z.object({ room: z.string() }),
     async resolve(req) {
-      return getRoomGifts({ room_id: req.input.room })
+      const key = `gift-gifts-of-${req.input.room}`
+      const r = await redis.get(key)
+      if (r !== null) {
+        return JSON.parse(r)
+      }
+      const resp = await getRoomGifts({ room_id: req.input.room })
+      await redis.setex(key, 1 * day, JSON.stringify(resp))
+      return resp
     },
   })

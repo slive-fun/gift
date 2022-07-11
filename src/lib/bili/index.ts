@@ -81,19 +81,16 @@ export type GiftConfigParams = {
 // https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftConfig?platform=pc&source=live&room_id=23808442
 const GiftConfigAPI =
   'https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftConfig?platform=pc&source=live'
-const SpecialGiftAPI =
-  'https://api.live.bilibili.com//xlive/web-room/v1/giftPanel/tabRoomGiftList?platform=pc&source=live'
 const CommonGiftAPI =
   'https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftData?platform=pc&source=live'
+
 export async function getGiftConfig(params: GiftConfigParams) {
   const body = params as { [k: string]: string }
   const u = new URL(GiftConfigAPI)
   for (const k in body) {
     u.searchParams.set(k, body[k])
   }
-  const rinit: RequestInit = {
-    method: 'GET',
-  }
+  const rinit: RequestInit = { method: 'GET' }
   const resp = await fetch(u, rinit).then((r) => r.json())
   return resp as Resp<{ list: Gift[] }>
 }
@@ -107,13 +104,18 @@ export type RoomGiftsParams = {
 }
 export async function getRoomGifts(params: RoomGiftsParams) {
   let gifts: GiftIdOnly[] = []
-  const r1 = await getRoomCommonGifts(params)
+  const [r1, room] = await Promise.all([
+    getRoomCommonGifts(params),
+    getInfoByRoom(params.room_id).then((r) => r.data.room_info),
+  ])
   gifts = gifts.concat(r1.data.room_gift_list.gold_list)
   gifts = gifts.concat(r1.data.room_gift_list.silver_list)
-  for (const tab of r1.data.tab_list) {
+  for (const tab_id of ['2', '3']) {
     const r = await getRoomSpecialGifts({
       room_id: params.room_id,
-      tab_id: tab.tab_id.toString(),
+      tab_id: tab_id,
+      area_parent_id: room.parent_area_id.toString(),
+      area_id: room.area_id.toString(),
     })
     gifts = gifts.concat(r.data.list)
   }
@@ -125,9 +127,15 @@ export type GiftIdOnly = {
   gift_id: number
 }
 type SpecialGiftsResp = { list: GiftIdOnly[] }
-async function getRoomSpecialGifts(params: {
+const SpecialGiftAPI =
+  'https://api.live.bilibili.com//xlive/web-room/v1/giftPanel/tabRoomGiftList?platform=pc&source=live'
+export async function getRoomSpecialGifts(params: {
   room_id: string
   tab_id: string
+  /**子分区 ID 可以不用填 */
+  area_id?: string
+  /**父分区 ID 可以不用填, 获取分区 ID 可使用 get_area_info 方法 */
+  area_parent_id?: string
 }) {
   const body = params as { [k: string]: string }
   const u = new URL(SpecialGiftAPI)
@@ -136,9 +144,7 @@ async function getRoomSpecialGifts(params: {
   for (const k in body) {
     u.searchParams.set(k, body[k])
   }
-  const rinit: RequestInit = {
-    method: 'GET',
-  }
+  const rinit: RequestInit = { method: 'GET' }
   const resp = await fetch(u, rinit).then((r) => r.json())
   return resp as Resp<SpecialGiftsResp>
 }
@@ -153,15 +159,29 @@ type CommonGiftsResp = {
     tab_name: string
   }[]
 }
-async function getRoomCommonGifts(params: RoomGiftsParams) {
+export async function getRoomCommonGifts(params: RoomGiftsParams) {
   const body = params as { [k: string]: string }
   const u = new URL(CommonGiftAPI)
   for (const k in body) {
     u.searchParams.set(k, body[k])
   }
-  const rinit: RequestInit = {
-    method: 'GET',
-  }
+  const rinit: RequestInit = { method: 'GET' }
   const resp = await fetch(u, rinit).then((r) => r.json())
   return resp as Resp<CommonGiftsResp>
+}
+
+const GetInfoByRoomURL =
+  'https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom'
+export type RoomInfo = {
+  room_info: {
+    area_id: number
+    parent_area_id: number
+  }
+}
+export async function getInfoByRoom(room_id: string) {
+  const u = new URL(GetInfoByRoomURL)
+  u.searchParams.set('room_id', room_id)
+  const rinit: RequestInit = { method: 'GET' }
+  const resp = await fetch(u, rinit).then((r) => r.json())
+  return resp as Resp<RoomInfo>
 }
