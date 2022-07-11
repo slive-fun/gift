@@ -80,13 +80,13 @@ export type GiftConfigParams = {
 
 // https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftConfig?platform=pc&source=live&room_id=23808442
 const GiftConfigAPI =
-  'https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftConfig'
+  'https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftConfig?platform=pc&source=live'
+const SpecialGiftAPI =
+  'https://api.live.bilibili.com//xlive/web-room/v1/giftPanel/tabRoomGiftList?platform=pc&source=live'
+const CommonGiftAPI =
+  'https://api.live.bilibili.com/xlive/web-room/v1/giftPanel/giftData?platform=pc&source=live'
 export async function getGiftConfig(params: GiftConfigParams) {
-  const body: { [k: string]: string } = {
-    platform: 'pc',
-    source: 'live',
-    ...(params as any as { [k: string]: string }),
-  }
+  const body = params as { [k: string]: string }
   const u = new URL(GiftConfigAPI)
   for (const k in body) {
     u.searchParams.set(k, body[k])
@@ -96,4 +96,72 @@ export async function getGiftConfig(params: GiftConfigParams) {
   }
   const resp = await fetch(u, rinit).then((r) => r.json())
   return resp as Resp<{ list: Gift[] }>
+}
+
+export type RoomGiftsParams = {
+  room_id: string
+  /**子分区 ID 可以不用填 */
+  area_id?: string
+  /**父分区 ID 可以不用填, 获取分区 ID 可使用 get_area_info 方法 */
+  area_parent_id?: string
+}
+export async function getRoomGifts(params: RoomGiftsParams) {
+  let gifts: GiftIdOnly[] = []
+  const r1 = await getRoomCommonGifts(params)
+  gifts = gifts.concat(r1.data.room_gift_list.gold_list)
+  gifts = gifts.concat(r1.data.room_gift_list.silver_list)
+  for (const tab of r1.data.tab_list) {
+    const r = await getRoomSpecialGifts({
+      room_id: params.room_id,
+      tab_id: tab.tab_id.toString(),
+    })
+    gifts = gifts.concat(r.data.list)
+  }
+  return gifts
+}
+
+export type GiftIdOnly = {
+  id: number
+  gift_id: number
+}
+type SpecialGiftsResp = { list: GiftIdOnly[] }
+async function getRoomSpecialGifts(params: {
+  room_id: string
+  tab_id: string
+}) {
+  const body = params as { [k: string]: string }
+  const u = new URL(SpecialGiftAPI)
+  body.build = '1'
+  body.tab_id = params.tab_id
+  for (const k in body) {
+    u.searchParams.set(k, body[k])
+  }
+  const rinit: RequestInit = {
+    method: 'GET',
+  }
+  const resp = await fetch(u, rinit).then((r) => r.json())
+  return resp as Resp<SpecialGiftsResp>
+}
+
+type CommonGiftsResp = {
+  room_gift_list: {
+    gold_list: GiftIdOnly[]
+    silver_list: GiftIdOnly[]
+  }
+  tab_list: {
+    tab_id: number
+    tab_name: string
+  }[]
+}
+async function getRoomCommonGifts(params: RoomGiftsParams) {
+  const body = params as { [k: string]: string }
+  const u = new URL(CommonGiftAPI)
+  for (const k in body) {
+    u.searchParams.set(k, body[k])
+  }
+  const rinit: RequestInit = {
+    method: 'GET',
+  }
+  const resp = await fetch(u, rinit).then((r) => r.json())
+  return resp as Resp<CommonGiftsResp>
 }

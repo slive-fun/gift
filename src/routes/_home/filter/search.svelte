@@ -5,5 +5,5 @@
 <input
   type="text"
   bind:value={$filters.keywords}
-  placeholder="输入文字过滤礼物"
+  placeholder="直接输入文字过滤礼物"
 />

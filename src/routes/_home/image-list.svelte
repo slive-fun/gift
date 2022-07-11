@@ -6,7 +6,7 @@
 
 <ul use:autoAnimate class="ul row">
   {#each $displayGifts as gift (gift.id)}
-    <li class="column column-20 item">
+    <li class="column column-20 item" data-id={gift.id}>
       <img src={gift.img_basic} alt={gift.name} height="140" width="140" />
       <h6>{gift.name}</h6>
       <span class="price" class:sliver={gift.coin_type === CoinType.Sliver}>
