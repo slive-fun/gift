@@ -39,6 +39,6 @@
   }
   .info {
     margin-top: 1.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
   }
 </style>

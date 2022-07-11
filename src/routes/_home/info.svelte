@@ -1,9 +1,11 @@
 <script>
   import { room, displayGifts, giftConfig } from './stores'
   $: roomF = $room.result !== null
+  $: packageName = $room.room ?? 'gifts-img'
+  import { createZip } from './download'
 </script>
 
-<div class="row info">
+<div class="row r">
   <div class="column">
     {#if roomF}
       展示/总: {$displayGifts.length}/{$room.result?.length}
@@ -12,13 +14,18 @@
       展示/总: {$displayGifts.length}/{$giftConfig.gifts.length}
     {/if}
   </div>
+  <div class="column pack">
+    <button on:click={() => createZip($displayGifts, packageName)}>
+      打包下载
+    </button>
+  </div>
 </div>
 
 <style>
-  .hetip {
-    text-align: right;
+  .r {
+    align-items: center;
   }
-  .hetip.hidden {
-    visibility: hidden;
+  .pack {
+    text-align: right;
   }
 </style>
