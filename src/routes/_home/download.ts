@@ -20,7 +20,7 @@ export async function createZip(gifts: Gift[], room: string) {
   const folder = zip.folder(room)
   const tasks = gifts.map(async (gift) => {
     const buf: any = await loadContent(gift.img_basic)
-    folder?.file(`${gift.price / 1000}-${gift.name}`, buf)
+    folder?.file(`${gift.price / 1000}-${gift.name}.png`, buf)
     return
   })
   await Promise.all(tasks)
