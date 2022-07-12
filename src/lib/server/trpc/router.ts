@@ -8,7 +8,10 @@ import {
   getRoomSpecialGifts,
 } from '$lib/bili'
 import type { Gift } from '$lib/bili'
-const redis = new Redis({ keyPrefix: 'slive.gift.' })
+const redis = new Redis({
+  host: process.env['GIFT_REDIS_HOST'],
+  keyPrefix: 'slive.gift.',
+})
 
 const minute = 60 * 1
 const hour = 60 * minute
