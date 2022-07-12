@@ -2,7 +2,8 @@ FROM node:16-alpine as Deps
 WORKDIR /app
 COPY package.json /app/
 COPY yarn.lock /app/
-RUN node -pe '(t="dependencies",JSON.stringify({[t]:require("./package.json")[t],type: "module"}))' > package.json
+RUN node -pe '(t="dependencies",JSON.stringify({[t]:require("./package.json")[t],type:"module"}))' > deps.json \
+  && mv deps.json package.json
 RUN yarn install --production
 
 FROM node:16-alpine
